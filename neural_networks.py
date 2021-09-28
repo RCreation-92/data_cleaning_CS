@@ -331,26 +331,26 @@ test_df_cleaned_SMOTE = optimized_data_for_SMOTE(test_df)
 # print('test_df_cleaned', test_df_cleaned)
 
 
-confusion_matrix_logreg, accuracy_logreg, specificity_logreg, sensitivity_logreg, \
-type1_logreg, type2_logreg, AIC_logreg = logistic_regression(df_cleaned, test_df_cleaned)
-# confusion_matrix, model_accuracy = logistic_regression(df_cleaned, test_df_cleaned)
-print('results for logistic regression')
-print('confusion_matrix_logreg', confusion_matrix_logreg)
-print('accuracy_logreg', accuracy_logreg)
-print('specificity_logreg', specificity_logreg)
-print('sensitivity_logreg', sensitivity_logreg)
-print('type1_logreg', type1_logreg)
-print('type2_logreg', type2_logreg)
-
-confusion_matrix_SMOTE, accuracy_SMOTE, specificity_SMOTE, sensitivity_SMOTE, type1_SMOTE, type2_SMOTE, AIC_SMOTE \
-    = logistic_regression_smt(df_cleaned, test_df_cleaned)
-print('results for SMOTE data + logistic regression')
-print('confusion_matrix_SMOTE', confusion_matrix_SMOTE)
-print('accuracy_SMOTE', accuracy_SMOTE)
-print('specificity_SMOTE', specificity_SMOTE)
-print('sensitivity_SMOTE', sensitivity_SMOTE)
-print('type1_SMOTE', type1_SMOTE)
-print('type2_SMOTE', type2_SMOTE)
+# confusion_matrix_logreg, accuracy_logreg, specificity_logreg, sensitivity_logreg, \
+# type1_logreg, type2_logreg, AIC_logreg = logistic_regression(df_cleaned, test_df_cleaned)
+# # confusion_matrix, model_accuracy = logistic_regression(df_cleaned, test_df_cleaned)
+# print('results for logistic regression')
+# print('confusion_matrix_logreg', confusion_matrix_logreg)
+# print('accuracy_logreg', accuracy_logreg)
+# print('specificity_logreg', specificity_logreg)
+# print('sensitivity_logreg', sensitivity_logreg)
+# print('type1_logreg', type1_logreg)
+# print('type2_logreg', type2_logreg)
+#
+# confusion_matrix_SMOTE, accuracy_SMOTE, specificity_SMOTE, sensitivity_SMOTE, type1_SMOTE, type2_SMOTE, AIC_SMOTE \
+#     = logistic_regression_smt(df_cleaned, test_df_cleaned)
+# print('results for SMOTE data + logistic regression')
+# print('confusion_matrix_SMOTE', confusion_matrix_SMOTE)
+# print('accuracy_SMOTE', accuracy_SMOTE)
+# print('specificity_SMOTE', specificity_SMOTE)
+# print('sensitivity_SMOTE', sensitivity_SMOTE)
+# print('type1_SMOTE', type1_SMOTE)
+# print('type2_SMOTE', type2_SMOTE)
 
 # opt_confusion_matrix_logreg, opt_accuracy_logreg, opt_specificity_logreg, opt_sensitivity_logreg, \
 # opt_type1_logreg, opt_type2_logreg, opt_AIC_logreg = logistic_regression(df_cleaned_logreg, test_df_cleaned_logreg)
@@ -556,51 +556,77 @@ def Adaboost(train, test):
 ########### Code below here is uses Neural Networks which is a similar technique to SMOTE for handling the minority class########
 ##
 
-def cleaning_data(any_dataframe):
+def neural_network_test(train_dataframe, test_dataframe):
 
-    print('any_df', any_dataframe)
-    df = any_dataframe
-    df_imputed = df.select_dtypes(include=np.number).fillna(df.mean())
-    print('df_imputed', df_imputed)
-    # df1 = any_dataframe.select_dtypes(include=np.number)
-    #
-    # df1_imputed = df1.fillna(df1.mean())
-    # print('df1_imputed', df1_imputed)
+    train_data = train_dataframe.values
+    test_data = test_dataframe.values
+    print('train', train_dataframe)
+    print('test', test_dataframe)
 
-    merged = pd.merge(df, df_imputed, how='left', on='ID')
-    print('merged', merged)
+    train_data_preprocess = []
+    for i in range(train_data.shape[1]):
+        data_temp = []
+        if (i == train_data.shape[1]-1):  # first column 'class'
+            # normalize the numeric data
+            catBinarizer = LabelBinarizer()
+            data_temp = catBinarizer.fit_transform(train_data[:, i])
+        else:
+            data_temp = minmax_scale(train_data[:, i].astype(float))
+            data_temp = np.reshape(data_temp, (len(data_temp), 1))
+        if len(train_data_preprocess) == 0:
+            train_data_preprocess = data_temp
+        else:
+            train_data_preprocess = np.hstack([train_data_preprocess, data_temp])
 
-    merged_2 = merged[merged.columns.drop(list(merged.filter(regex='_x')))]
-    # print(merged_2)
+    print("train_data_preprocess shape:", train_data_preprocess.shape)
 
-    df_imputed_dropped = merged_2.dropna()
-    print('imputed+dropped df', df_imputed_dropped)
-    # print(df_imputed_dropped.isnull().sum())
-    # print(df.isnull().sum())
+    test_data_preprocess = []
+    for i in range(test_data.shape[1]):
+        data_temp = []
+        if (i == test_data.shape[1]-1):  # first column 'class'
+            # normalize the numeric data
+            catBinarizer = LabelBinarizer()
+            print('test_data_1', test_data[:, i])
+            data_temp = catBinarizer.fit_transform(test_data[:, i])
+            print('test_data_catbinarizer', catBinarizer.fit_transform(test_data[:, i]))
+        else:
+            data_temp = minmax_scale(test_data[:, i].astype(float))
+            data_temp = np.reshape(data_temp, (len(data_temp), 1))
+        if len(test_data_preprocess) == 0:
+            test_data_preprocess = data_temp
+        else:
+            test_data_preprocess = np.hstack([test_data_preprocess, data_temp])
 
-    df_imputed_dropped_object = df.select_dtypes(include=object)
-    print('object', df.select_dtypes(include=object))
-    for column in df_imputed_dropped_object:
-        with ChainedAssignent():
-            df_imputed_dropped.loc[:, column] = pd.Categorical(df_imputed_dropped[column])
-            df_imputed_dropped.loc[:, column + str('_Code')] = df_imputed_dropped[column].cat.codes
+    print("test_data_preprocess", test_data_preprocess)
 
-    print('df_imputed_dropped[Var1_Code]', df_imputed_dropped['Var1_Code'])
-    df_imputed_dropped_2 = df_imputed_dropped.drop(df_imputed_dropped_object, axis=1)
-    print('df_imputed_dropped_2', df_imputed_dropped_2)
-    print(df_imputed_dropped_2.isnull().sum())
+    x_train = train_data_preprocess[:,:-1]
+    y_train = train_data_preprocess[:,-1:]
+    x_test = test_data_preprocess[:,:-1]
+    y_test = test_data_preprocess[:,-1:]
 
-    df_imputed_dropped_3 = df_imputed_dropped_2.drop('ID', axis=1)
+    print("Training data:", x_train.shape, y_train.shape)
+    print("Test data:", x_test.shape, y_test.shape)
 
-    min_max_scaler = preprocessing.MinMaxScaler()
-    data_minmax = min_max_scaler.fit_transform(df_imputed_dropped_3)
+    model = Sequential()
+    model.add(Dense(10, input_dim=x_train.shape[1], activation="relu"))
+    model.add(Dense(4, activation="relu"))
+    model.add(Dense(4, activation="gelu"))
+    model.add(Dense(1, activation="relu"))
+    model.summary()
+    model.compile(loss='binary_crossentropy', optimizer=tf.keras.optimizers.SGD(learning_rate=0.001))
 
-    new_dataframe = pd.DataFrame(data_minmax)
+    class_weights = {0: len(y_train) / np.sum(y_train == 0),
+                     1: len(y_train) / np.sum(y_train == 1)}
 
-    new_dataframe.columns = df_imputed_dropped_3.columns.values
-    # print('scaled', new_dataframe)
-    return new_dataframe
+    print("Class weights:", class_weights)
+    hist = model.fit(x_train, y_train, epochs=100, class_weight=class_weights, verbose=0)
 
+    y_predict_class = (model.predict(x_test) > 0.5).astype("int32")
+    prediction_results = print(pd.DataFrame(confusion_matrix(y_test, y_predict_class), index=['true:0', 'true:1'], columns=['pred:0', 'pred:1']))
+
+    return prediction_results
+
+print('neural_networks', neural_network_test(df_cleaned, test_df_cleaned))
 ###########Code below here is uses ADASYN which is a similar technique to SMOTE for handling the minority class########
 
 # def optimized_data_for_ADASYN(any_dataframe):
